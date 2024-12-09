@@ -1,0 +1,52 @@
+# Python bytecode files
+*.pyc
+*.pyo
+__pycache__/
+
+# Virtual environments
+env/
+venv/
+ENV/
+.venv/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# PyCharm project files
+.idea/
+
+# VS Code project files
+.vscode/
+
+# MacOS system files
+.DS_Store
+
+# Linux system files
+Thumbs.db
+
+# Log files
+*.log
+
+# Model weights and checkpoints (for computer vision)
+*.h5
+*.pth
+*.ckpt
+*.pkl
+
+# Training data (optional, depending on how you handle data storage)
+data/
+*.csv
+*.npz
+*.jpg
+*.png
+*.tiff
+*.jpeg
+
+# Other IDEs and tools
+*.swp
+*.swo
+
+# TensorFlow / PyTorch specific
+*.pb
+*.tflite
+*.onnx
