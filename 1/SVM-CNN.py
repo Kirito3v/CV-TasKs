@@ -3,7 +3,7 @@ import joblib
 import random
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 from tf_keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, BatchNormalization
 from tf_keras.models import Sequential, load_model
@@ -48,7 +48,7 @@ validation_data = validation_datagen.flow_from_directory(
 
 # Define file paths for the models
 cnn_model_path = 'cnn_model.h5'
-knn_model_path = 'knn_model.pkl'
+svm_model_path = 'svm_model.pkl'
 
 # Check if the CNN model exists and load it, else train it
 if os.path.exists(cnn_model_path):
@@ -95,23 +95,23 @@ train_features, train_labels = extract_features(cnn_model, train_data)
 # Extract features from validation data
 validation_features, validation_labels = extract_features(cnn_model, validation_data)
 
-# Check if the KNN model exists and load it, else train it
-if os.path.exists(knn_model_path):
-    print("Loading pre-trained KNN model...")
-    knn = joblib.load(knn_model_path)
+# Check if the SVM model exists and load it, else train it
+if os.path.exists(svm_model_path):
+    print("Loading pre-trained SVM model...")
+    svm = joblib.load(svm_model_path)
 else:
-    print("Training KNN model...")
-    knn = KNeighborsClassifier(n_neighbors=11, metric='euclidean')
-    knn.fit(train_features, train_labels)
+    print("Training SVM model...")
+    svm = SVC(kernel='linear')
+    svm.fit(train_features, train_labels)
     
-    # Save the trained KNN model
-    joblib.dump(knn, knn_model_path)
-    print("KNN model saved.")
+    # Save the trained SVM model
+    joblib.dump(svm, svm_model_path)
+    print("SVM model saved.")
 
-# Evaluate the best KNN model on validation data
-y_pred = knn.predict(validation_features)
+# Evaluate the best SVM model on validation data
+y_pred = svm.predict(validation_features)
 accuracy = accuracy_score(validation_labels, y_pred)
-print(f"KNN model accuracy : {accuracy * 100:.2f}%")
+print(f"SVM model accuracy : {accuracy * 100:.2f}%")
 
 
 # Select 10 random indices from the validation data
@@ -122,22 +122,30 @@ sample_images = []
 real_labels = []
 predicted_labels = []
 
-# To retrieve individual images from the validation generator
-validation_data.reset()  # Reset the generator to ensure we start from the beginning
-for idx in random_indices:
-    # Get the batch from the validation data
-    imgs, lbls = next(validation_data)  # This returns a batch of images and labels
-    
-    # Since we are sampling, we want to access the individual image in the batch
-    sample_images.append(imgs[idx % batch_size])  # Use modulo to get the correct image in the batch
-    real_labels.append(lbls[idx % batch_size])  # Same for labels
-    predicted_labels.append(y_pred[idx])  # Get the predicted label
+# Ensure we can access specific samples
+validation_data.reset()  # Reset the generator to start from the beginning
+
+# Iterate through the validation generator to fetch specific samples
+current_index = 0  # To keep track of overall index
+for imgs, lbls in validation_data:
+    batch_size = imgs.shape[0]  # Get the actual batch size (might vary for the last batch)
+
+    for i in range(batch_size):
+        if current_index in random_indices:
+            sample_images.append(imgs[i])
+            real_labels.append(lbls[i])
+            predicted_labels.append(y_pred[current_index])
+        
+        current_index += 1
+
+    if len(sample_images) == len(random_indices):
+        break  # Stop when we’ve collected all required samples
 
 # Plot the images with real and predicted labels
 plt.figure(figsize=(12, 8))
 for i, (image, real, predicted) in enumerate(zip(sample_images, real_labels, predicted_labels)):
     plt.subplot(2, 5, i + 1)
-    plt.imshow(image)  # No need for [0] as we're directly accessing the image
+    plt.imshow(image)  # Display the image
     plt.title(f"Real: {'Cat' if real == 0 else 'Dog'}\nPred: {'Cat' if predicted == 0 else 'Dog'}")
     plt.axis('off')
 
