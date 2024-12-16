@@ -78,22 +78,42 @@ else:
     print("CNN model saved.")
 
 
-# Function to extract features using the CNN model
-def extract_features(model, data):
-    features = []
-    labels = []
-    for _ in range(len(data)):
-        imgs, lbls = next(data)
-        feature_vectors = model.predict(imgs)  # Get feature vectors from CNN layers
-        features.extend(feature_vectors)
-        labels.extend(lbls)
-    return np.array(features), np.array(labels)
+def extract_or_load_features(model, data, feature_file, label_file):
+    if os.path.exists(feature_file) and os.path.exists(label_file):
+        # Load features and labels if files exist
+        print(f"Loading features from {feature_file} and labels from {label_file}")
+        features = np.load(feature_file)
+        labels = np.load(label_file)
+    else:
+        # Extract and save features and labels if files do not exist
+        print(f"Extracting features and saving to {feature_file} and {label_file}")
+        features = []
+        labels = []
+        for _ in range(len(data)):
+            imgs, lbls = next(data)
+            feature_vectors = model.predict(imgs)  # Get feature vectors from CNN layers
+            features.extend(feature_vectors)
+            labels.extend(lbls)
+        
+        # Convert to numpy arrays
+        features = np.array(features)
+        labels = np.array(labels)
+        
+        # Save features and labels to files
+        np.save(feature_file, features)
+        np.save(label_file, labels)
+    
+    return features, labels
 
-# Extract features from training data
-train_features, train_labels = extract_features(cnn_model, train_data)
+# Use the function for training data
+train_features, train_labels = extract_or_load_features(
+    cnn_model, train_data, "train_features.npy", "train_labels.npy"
+)
 
-# Extract features from validation data
-validation_features, validation_labels = extract_features(cnn_model, validation_data)
+# Use the function for validation data
+validation_features, validation_labels = extract_or_load_features(
+    cnn_model, validation_data, "validation_features.npy", "validation_labels.npy"
+)
 
 # Check if the KNN model exists and load it, else train it
 if os.path.exists(knn_model_path):
